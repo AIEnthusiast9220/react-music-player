@@ -157,7 +157,7 @@ export function MusicProvider({ children }: { children: React.ReactNode }) {
   const playSong = async (song: Song, playlist?: Song[]) => {
     try {
       dispatch({ type: 'SET_LOADING', payload: true });
-      
+
       if (sound) {
         await sound.unloadAsync();
       }
@@ -172,7 +172,7 @@ export function MusicProvider({ children }: { children: React.ReactNode }) {
           dispatch({ type: 'SET_POSITION', payload: status.positionMillis || 0 });
           dispatch({ type: 'SET_DURATION', payload: status.durationMillis || 0 });
           dispatch({ type: 'SET_PLAYING', payload: status.isPlaying || false });
-          
+
           if (status.didJustFinish) {
             nextSong();
           }
@@ -304,111 +304,6 @@ export function MusicProvider({ children }: { children: React.ReactNode }) {
   };
 
   return <MusicContext.Provider value={value}>{children}</MusicContext.Provider>;
-}
-
-export function useMusic() {
-  const context = useContext(MusicContext);
-  if (context === undefined) {
-    throw new Error('useMusic must be used within a MusicProvider');
-  }
-  return context;
-}
-import React, { createContext, useContext, useReducer, ReactNode } from 'react';
-
-interface Song {
-  id: string;
-  title: string;
-  artist: string;
-  album: string;
-  duration: number;
-  uri?: string;
-}
-
-interface MusicState {
-  songs: Song[];
-  currentSong: Song | null;
-  isPlaying: boolean;
-  currentTime: number;
-  playlist: Song[];
-}
-
-interface MusicContextType {
-  state: MusicState;
-  playSong: (song: Song, playlist?: Song[]) => Promise<void>;
-  pauseMusic: () => Promise<void>;
-  resumeMusic: () => Promise<void>;
-  addSongs: (songs: Song[]) => void;
-}
-
-type MusicAction = 
-  | { type: 'SET_SONGS'; payload: Song[] }
-  | { type: 'PLAY_SONG'; payload: { song: Song; playlist?: Song[] } }
-  | { type: 'PAUSE' }
-  | { type: 'RESUME' }
-  | { type: 'SET_CURRENT_TIME'; payload: number };
-
-const initialState: MusicState = {
-  songs: [],
-  currentSong: null,
-  isPlaying: false,
-  currentTime: 0,
-  playlist: [],
-};
-
-function musicReducer(state: MusicState, action: MusicAction): MusicState {
-  switch (action.type) {
-    case 'SET_SONGS':
-      return { ...state, songs: action.payload };
-    case 'PLAY_SONG':
-      return {
-        ...state,
-        currentSong: action.payload.song,
-        playlist: action.payload.playlist || state.songs,
-        isPlaying: true,
-      };
-    case 'PAUSE':
-      return { ...state, isPlaying: false };
-    case 'RESUME':
-      return { ...state, isPlaying: true };
-    case 'SET_CURRENT_TIME':
-      return { ...state, currentTime: action.payload };
-    default:
-      return state;
-  }
-}
-
-const MusicContext = createContext<MusicContextType | undefined>(undefined);
-
-export function MusicProvider({ children }: { children: ReactNode }) {
-  const [state, dispatch] = useReducer(musicReducer, initialState);
-
-  const playSong = async (song: Song, playlist?: Song[]) => {
-    dispatch({ type: 'PLAY_SONG', payload: { song, playlist } });
-  };
-
-  const pauseMusic = async () => {
-    dispatch({ type: 'PAUSE' });
-  };
-
-  const resumeMusic = async () => {
-    dispatch({ type: 'RESUME' });
-  };
-
-  const addSongs = (songs: Song[]) => {
-    dispatch({ type: 'SET_SONGS', payload: songs });
-  };
-
-  return (
-    <MusicContext.Provider value={{
-      state,
-      playSong,
-      pauseMusic,
-      resumeMusic,
-      addSongs,
-    }}>
-      {children}
-    </MusicContext.Provider>
-  );
 }
 
 export function useMusic() {
