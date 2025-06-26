@@ -130,9 +130,33 @@ function musicReducer(state: MusicState, action: MusicAction): MusicState {
 
 const MusicContext = createContext<MusicContextType | undefined>(undefined);
 
-export function MusicProvider({ children }: { children: React.ReactNode }) {
+export const MusicProvider: React.FC<{ children: React.ReactNode }> = ({ children }) => {
   const [state, dispatch] = useReducer(musicReducer, initialState);
   const [sound, setSound] = React.useState<Audio.Sound | null>(null);
+
+  useEffect(() => {
+    const setupAudio = async () => {
+      try {
+        // Check if Audio is available
+        if (Audio && Audio.setAudioModeAsync) {
+          await Audio.setAudioModeAsync({
+            allowsRecordingIOS: false,
+            staysActiveInBackground: true,
+            playsInSilentModeIOS: true,
+            shouldDuckAndroid: true,
+            playThroughEarpieceAndroid: false,
+            interruptionModeIOS: Audio.INTERRUPTION_MODE_IOS_DO_NOT_MIX,
+            interruptionModeAndroid: Audio.INTERRUPTION_MODE_ANDROID_DO_NOT_MIX,
+          });
+        }
+      } catch (error) {
+        console.error('Failed to setup audio:', error);
+        // Continue without crashing
+      }
+    };
+
+    setupAudio();
+  }, []);
 
   useEffect(() => {
     Audio.setAudioModeAsync({
