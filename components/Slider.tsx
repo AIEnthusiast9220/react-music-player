@@ -1,5 +1,7 @@
+
 import React from 'react';
-import { View, PanGestureHandler, PanGestureHandlerGestureEvent } from 'react-native-gesture-handler';
+import { View, StyleSheet } from 'react-native';
+import { PanGestureHandler, PanGestureHandlerGestureEvent } from 'react-native-gesture-handler';
 import Animated, {
   useAnimatedGestureHandler,
   useAnimatedStyle,
@@ -8,7 +10,6 @@ import Animated, {
   interpolate,
   Extrapolate,
 } from 'react-native-reanimated';
-import { StyleSheet } from 'react-native';
 
 interface SliderProps {
   style?: any;
@@ -36,27 +37,26 @@ export default function Slider({
   const translateX = useSharedValue(0);
   const sliderWidth = useSharedValue(0);
 
+  React.useEffect(() => {
+    const normalizedValue = ((value - minimumValue) / (maximumValue - minimumValue)) * sliderWidth.value;
+    translateX.value = normalizedValue;
+  }, [value, maximumValue, minimumValue, sliderWidth.value]);
+
   const gestureHandler = useAnimatedGestureHandler<PanGestureHandlerGestureEvent>({
-    onStart: () => {
-      // Calculate initial position based on current value
-      const percentage = (value - minimumValue) / (maximumValue - minimumValue);
-      translateX.value = percentage * sliderWidth.value;
-    },
+    onStart: () => {},
     onActive: (event) => {
-      const newTranslateX = Math.max(0, Math.min(sliderWidth.value, event.translationX + translateX.value));
-      translateX.value = newTranslateX;
+      const newX = Math.max(0, Math.min(sliderWidth.value, event.x));
+      translateX.value = newX;
       
+      const normalizedValue = (newX / sliderWidth.value) * (maximumValue - minimumValue) + minimumValue;
       if (onValueChange) {
-        const percentage = newTranslateX / sliderWidth.value;
-        const newValue = minimumValue + percentage * (maximumValue - minimumValue);
-        runOnJS(onValueChange)(newValue);
+        runOnJS(onValueChange)(normalizedValue);
       }
     },
     onEnd: () => {
+      const normalizedValue = (translateX.value / sliderWidth.value) * (maximumValue - minimumValue) + minimumValue;
       if (onSlidingComplete) {
-        const percentage = translateX.value / sliderWidth.value;
-        const newValue = minimumValue + percentage * (maximumValue - minimumValue);
-        runOnJS(onSlidingComplete)(newValue);
+        runOnJS(onSlidingComplete)(normalizedValue);
       }
     },
   });
@@ -76,11 +76,9 @@ export default function Slider({
   return (
     <View style={[styles.container, style]}>
       <View
-        style={[styles.maximumTrack, { backgroundColor: maximumTrackTintColor }]}
+        style={[styles.track, { backgroundColor: maximumTrackTintColor }]}
         onLayout={(event) => {
-          sliderWidth.value = event.nativeEvent.layout.width - 16; // Account for thumb width
-          const percentage = (value - minimumValue) / (maximumValue - minimumValue);
-          translateX.value = percentage * sliderWidth.value;
+          sliderWidth.value = event.nativeEvent.layout.width;
         }}
       >
         <Animated.View
@@ -90,10 +88,10 @@ export default function Slider({
             trackAnimatedStyle,
           ]}
         />
+        <PanGestureHandler onGestureEvent={gestureHandler}>
+          <Animated.View style={[styles.thumb, thumbStyle, thumbAnimatedStyle]} />
+        </PanGestureHandler>
       </View>
-      <PanGestureHandler onGestureEvent={gestureHandler}>
-        <Animated.View style={[styles.thumb, thumbStyle, thumbAnimatedStyle]} />
-      </PanGestureHandler>
     </View>
   );
 }
@@ -103,7 +101,7 @@ const styles = StyleSheet.create({
     height: 40,
     justifyContent: 'center',
   },
-  maximumTrack: {
+  track: {
     height: 4,
     borderRadius: 2,
     position: 'relative',
@@ -112,13 +110,24 @@ const styles = StyleSheet.create({
     height: 4,
     borderRadius: 2,
     position: 'absolute',
+    top: 0,
+    left: 0,
   },
   thumb: {
-    width: 16,
-    height: 16,
-    borderRadius: 8,
-    backgroundColor: '#8B5CF6',
+    width: 20,
+    height: 20,
+    borderRadius: 10,
+    backgroundColor: '#FFFFFF',
     position: 'absolute',
-    top: -6,
+    top: -8,
+    marginLeft: -10,
+    shadowColor: '#000',
+    shadowOffset: {
+      width: 0,
+      height: 2,
+    },
+    shadowOpacity: 0.25,
+    shadowRadius: 3.84,
+    elevation: 5,
   },
 });
